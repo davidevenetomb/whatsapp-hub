@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WhatsApp Hub, pannello</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f6f7f9;
+    --panel: #ffffff;
+    --text: #1a1d23;
+    --muted: #6b7280;
+    --border: #e3e6ea;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --danger: #dc2626;
+    --ok: #16a34a;
+    --warn: #d97706;
+    --bad: #b91c1c;
+    --grey: #64748b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --panel: #1d2027;
+      --text: #e6e8eb;
+      --muted: #9aa1ab;
+      --border: #2c303a;
+      --accent: #3b82f6;
+      --accent-fg: #0b0d10;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --bad: #f87171;
+      --grey: #94a3b8;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+  h1 { font-size: 1.4rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 0.9rem; margin: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+  .panel h2 { font-size: 1rem; margin: 0 0 12px; }
+  label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 4px; }
+  input[type="text"], input[type="password"] {
+    width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); font-size: 0.9rem;
+  }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+  .row > div { flex: 1; min-width: 160px; }
+  button {
+    cursor: pointer; border: none; border-radius: 6px; padding: 8px 14px;
+    font-size: 0.85rem; font-weight: 600; background: var(--accent); color: var(--accent-fg);
+  }
+  button.secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.danger { background: var(--danger); color: #fff; }
+  button.small { padding: 5px 10px; font-size: 0.78rem; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; }
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: #fff; white-space: nowrap; }
+  .badge.attivo { background: var(--ok); }
+  .badge.in_attesa { background: var(--warn); }
+  .badge.offline { background: var(--warn); }
+  .badge.da_collegare { background: var(--grey); }
+  .badge.scollegato { background: var(--bad); }
+  .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .msg { font-size: 0.85rem; padding: 8px 10px; border-radius: 6px; margin-top: 8px; }
+  .msg.error { background: rgba(220,38,38,0.12); color: var(--bad); }
+  .msg.ok { background: rgba(22,163,74,0.12); color: var(--ok); }
+  .key { font-family: ui-monospace, monospace; font-size: 0.8rem; cursor: pointer; }
+  .empty { color: var(--muted); font-size: 0.85rem; padding: 10px 0; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+    display: flex; align-items: center; justify-content: center; z-index: 10;
+  }
+  .modal {
+    background: var(--panel); border-radius: 12px; padding: 22px; width: 100%; max-width: 340px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .modal h3 { margin: 0; font-size: 1rem; }
+  .modal .actions { justify-content: flex-end; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <h1>WhatsApp Hub</h1>
+    <p class="sub">Clienti, collegamento numeri, invio di test</p>
+  </div>
+
+  <div class="panel">
+    <h2>Token amministratore</h2>
+    <div class="row">
+      <div>
+        <label for="adminToken">ADMIN_TOKEN</label>
+        <input type="password" id="adminToken" placeholder="Incolla qui il token" />
+      </div>
+      <button id="salvaToken">Salva</button>
+    </div>
+    <div id="authMsg"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Aggiungi cliente</h2>
+    <div class="row">
+      <div>
+        <label for="nuovoNome">Nome cliente</label>
+        <input type="text" id="nuovoNome" placeholder="es. Idraulica Rossi" />
+      </div>
+      <button id="creaCliente">Crea</button>
+    </div>
+    <div id="creaMsg"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Clienti</h2>
+    <div id="listaMsg"></div>
+    <table>
+      <thead>
+        <tr><th>Nome cliente</th><th>Stato</th><th>Numero collegato</th><th>Key</th><th>Azioni</th></tr>
+      </thead>
+      <tbody id="clientiBody"></tbody>
+    </table>
+    <div id="clientiEmpty" class="empty hidden">Nessun cliente ancora.</div>
+  </div>
+</div>
+
+<div id="testOverlay" class="overlay hidden">
+  <div class="modal">
+    <h3 id="testTitle"></h3>
+    <div>
+      <label for="testTo">Numero destinatario</label>
+      <input type="text" id="testTo" placeholder="es. +39 333 1234567" />
+    </div>
+    <div>
+      <label for="testMessage">Messaggio</label>
+      <input type="text" id="testMessage" placeholder="Messaggio di prova" />
+    </div>
+    <div id="testMsg"></div>
+    <div class="actions">
+      <button class="secondary" id="chiudiTest">Annulla</button>
+      <button id="inviaTest">Invia</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "whatsapp_hub_admin_token";
+const statoLabel = {
+  da_collegare: "Da collegare",
+  in_attesa: "In attesa",
+  attivo: "Attivo",
+  offline: "Offline",
+  scollegato: "Scollegato",
+};
+
+const el = (id) => document.getElementById(id);
+const adminTokenInput = el("adminToken");
+const authMsg = el("authMsg");
+const creaMsg = el("creaMsg");
+const listaMsg = el("listaMsg");
+const clientiBody = el("clientiBody");
+const clientiEmpty = el("clientiEmpty");
+const testOverlay = el("testOverlay");
+const testTitle = el("testTitle");
+const testMsg = el("testMsg");
+
+let testClienteId = null;
+let pollTimer = null;
+
+function getToken() {
+  return localStorage.getItem(STORAGE_KEY) || "";
+}
+
+adminTokenInput.value = getToken();
+
+function authHeaders() {
+  return { Authorization: "Bearer " + getToken(), "Content-Type": "application/json" };
+}
+
+function mostraMsg(elemento, testo, tipo) {
+  elemento.innerHTML = testo ? '<div class="msg ' + tipo + '">' + testo + "</div>" : "";
+}
+
+function mascheraKey(key) {
+  if (!key || key.length < 12) return key || "";
+  return key.slice(0, 8) + "..." + key.slice(-4);
+}
+
+async function chiamata(path, opzioni) {
+  const res = await fetch(path, { ...opzioni, headers: { ...authHeaders(), ...(opzioni?.headers || {}) } });
+  const dati = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(dati.error || ("Errore " + res.status));
+  return dati;
+}
+
+async function copiaTesto(testo) {
+  try {
+    await navigator.clipboard.writeText(testo);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function rigaCliente(c) {
+  const tr = document.createElement("tr");
+
+  const tdNome = document.createElement("td");
+  tdNome.textContent = c.nome;
+
+  const tdStato = document.createElement("td");
+  const badge = document.createElement("span");
+  badge.className = "badge " + c.stato;
+  badge.textContent = statoLabel[c.stato] || c.stato;
+  tdStato.appendChild(badge);
+
+  const tdNumero = document.createElement("td");
+  tdNumero.textContent = c.numero || "-";
+
+  const tdKey = document.createElement("td");
+  const keySpan = document.createElement("span");
+  keySpan.className = "key";
+  keySpan.textContent = mascheraKey(c.key);
+  keySpan.title = "Clicca per copiare la key completa";
+  keySpan.addEventListener("click", async () => {
+    const ok = await copiaTesto(c.key);
+    keySpan.textContent = ok ? "Copiata" : "Errore copia";
+    setTimeout(() => { keySpan.textContent = mascheraKey(c.key); }, 1200);
+  });
+  tdKey.appendChild(keySpan);
+
+  const tdAzioni = document.createElement("td");
+  tdAzioni.className = "actions";
+
+  const btnLink = document.createElement("button");
+  btnLink.className = "small";
+  btnLink.textContent = "Genera link QR";
+  btnLink.addEventListener("click", async () => {
+    try {
+      const dati = await chiamata("/api/clienti/" + c.id + "/link", { method: "POST" });
+      const ok = await copiaTesto(dati.url);
+      mostraMsg(listaMsg, "Link " + (ok ? "copiato negli appunti" : "generato") + ": " + dati.url, "ok");
+      caricaClienti();
+    } catch (e) {
+      mostraMsg(listaMsg, e.message, "error");
+    }
+  });
+
+  const btnTest = document.createElement("button");
+  btnTest.className = "small secondary";
+  btnTest.textContent = "Test";
+  btnTest.disabled = c.stato !== "attivo";
+  btnTest.addEventListener("click", () => apriTest(c));
+
+  const btnKey = document.createElement("button");
+  btnKey.className = "small secondary";
+  btnKey.textContent = "Rigenera key";
+  btnKey.addEventListener("click", async () => {
+    if (!confirm("Rigenerare la key di " + c.nome + "? La vecchia key smette subito di funzionare.")) return;
+    try {
+      await chiamata("/api/clienti/" + c.id + "/key", { method: "POST" });
+      caricaClienti();
+    } catch (e) {
+      mostraMsg(listaMsg, e.message, "error");
+    }
+  });
+
+  const btnElimina = document.createElement("button");
+  btnElimina.className = "small danger";
+  btnElimina.textContent = "Elimina";
+  btnElimina.addEventListener("click", async () => {
+    if (!confirm("Eliminare " + c.nome + "? Il numero verrà scollegato e la cronologia in coda cancellata.")) return;
+    try {
+      await chiamata("/api/clienti/" + c.id, { method: "DELETE" });
+      caricaClienti();
+    } catch (e) {
+      mostraMsg(listaMsg, e.message, "error");
+    }
+  });
+
+  tdAzioni.append(btnLink, btnTest, btnKey, btnElimina);
+  tr.append(tdNome, tdStato, tdNumero, tdKey, tdAzioni);
+  return tr;
+}
+
+function apriTest(cliente) {
+  testClienteId = cliente.id;
+  testTitle.textContent = "Messaggio di test, " + cliente.nome;
+  el("testTo").value = "";
+  el("testMessage").value = "";
+  mostraMsg(testMsg, "", "");
+  testOverlay.classList.remove("hidden");
+}
+
+el("chiudiTest").addEventListener("click", () => testOverlay.classList.add("hidden"));
+
+el("inviaTest").addEventListener("click", async () => {
+  const to = el("testTo").value.trim();
+  const message = el("testMessage").value.trim();
+  if (!to || !message) {
+    mostraMsg(testMsg, "Numero e messaggio sono obbligatori.", "error");
+    return;
+  }
+  try {
+    await chiamata("/api/clienti/" + testClienteId + "/test", {
+      method: "POST",
+      body: JSON.stringify({ to, message }),
+    });
+    mostraMsg(testMsg, "Messaggio inviato.", "ok");
+  } catch (e) {
+    mostraMsg(testMsg, e.message, "error");
+  }
+});
+
+async function caricaClienti() {
+  if (!getToken()) return;
+  try {
+    const dati = await chiamata("/api/clienti");
+    clientiBody.innerHTML = "";
+    if (dati.clienti.length === 0) {
+      clientiEmpty.classList.remove("hidden");
+    } else {
+      clientiEmpty.classList.add("hidden");
+      dati.clienti.forEach((c) => clientiBody.appendChild(rigaCliente(c)));
+    }
+    mostraMsg(listaMsg, "", "");
+  } catch (e) {
+    mostraMsg(listaMsg, e.message, "error");
+  }
+}
+
+el("salvaToken").addEventListener("click", () => {
+  localStorage.setItem(STORAGE_KEY, adminTokenInput.value.trim());
+  mostraMsg(authMsg, "Token salvato.", "ok");
+  caricaClienti();
+});
+
+el("creaCliente").addEventListener("click", async () => {
+  const nome = el("nuovoNome").value.trim();
+  if (!nome) {
+    mostraMsg(creaMsg, "Il nome è obbligatorio.", "error");
+    return;
+  }
+  try {
+    await chiamata("/api/clienti", { method: "POST", body: JSON.stringify({ nome }) });
+    el("nuovoNome").value = "";
+    mostraMsg(creaMsg, "Cliente creato.", "ok");
+    caricaClienti();
+  } catch (e) {
+    mostraMsg(creaMsg, e.message, "error");
+  }
+});
+
+caricaClienti();
+pollTimer = setInterval(caricaClienti, 5000);
+</script>
+</body>
+</html>
